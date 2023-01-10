@@ -1,0 +1,42 @@
+cabal-version:      3.0
+name:               dupIO
+version:            0.1.0
+-- synopsis:
+-- description:
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Edsko de Vries
+maintainer:         edsko@well-typed.com
+copyright:          Well-Typed LLP
+category:           Development
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common lang
+  ghc-options:
+      -Wall
+  build-depends:
+      base >= 4.12
+  default-language:
+      Haskell2010
+
+library
+  import:
+      lang
+  exposed-modules:
+      Data.DupIO
+  hs-source-dirs:
+      src
+
+test-suite test-dupIO
+  import:
+      lang
+  type:
+      exitcode-stdio-1.0
+  hs-source-dirs:
+      test
+  main-is:
+      Main.hs
+  build-depends:
+    , dupIO
+    , tasty
