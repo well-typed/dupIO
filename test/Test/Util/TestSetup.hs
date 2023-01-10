@@ -1,0 +1,165 @@
+module Test.Util.TestSetup (
+    -- * Expose IO
+    IO
+  , wrapIO
+  , unwrapIO
+  , unsafePerformIO
+  , evaluate
+  , (<*)
+    -- ** In tasty
+  , Assertion
+  , testCase
+  , testCaseInfo
+  , testLocalOOM
+  , assertEqualInfo
+    -- * Top-level retrying exception handler
+  , retry
+    -- * Check memory usage
+  , MemSize -- opaque
+  , mb
+  , checkMem
+  , LocalOutOfMemoryException -- opaque
+    -- * Conduit definition
+  , Conduit(..)
+  ) where
+
+import Prelude hiding (IO, (<*))
+
+import Control.Exception (SomeException, Exception)
+import Data.Coerce
+import Data.Word
+import GHC.Prim (State#, RealWorld)
+import GHC.Stats
+import System.Mem
+import Test.Tasty (TestName, TestTree)
+
+import qualified Control.Exception as E
+import qualified GHC.IO            as GHC.IO
+import qualified Test.Tasty.HUnit  as Tasty
+
+import Test.Util
+
+{-------------------------------------------------------------------------------
+  Expose IO
+-------------------------------------------------------------------------------}
+
+type IO a = State# RealWorld -> (# State# RealWorld, a #)
+
+wrapIO :: IO a -> GHC.IO.IO a
+wrapIO = coerce
+
+unwrapIO :: GHC.IO.IO a -> IO a
+unwrapIO = coerce
+
+unsafePerformIO :: forall a. IO a -> a
+unsafePerformIO = coerce (GHC.IO.unsafePerformIO @a)
+
+evaluate :: forall a. a -> IO a
+evaluate = coerce (GHC.IO.evaluate @a)
+
+(<*) :: forall a. IO a -> IO () -> IO a
+f <* g = \w0 ->
+    let !(# w1, a  #) = f w0
+        !(# w2, () #) = g w1
+    in (# w2, a #)
+
+{-------------------------------------------------------------------------------
+  Unwrapped IO in assertions
+-------------------------------------------------------------------------------}
+
+type Assertion = IO ()
+
+testCase :: TestName -> Assertion -> TestTree
+testCase name = Tasty.testCase name . wrapIO
+
+testCaseInfo :: TestName -> IO String -> TestTree
+testCaseInfo name = Tasty.testCaseInfo name . wrapIO
+
+-- | Like 'testCase', but succeed only if the assertion throws a
+-- 'LocalOutOfMemoryException' exception
+testLocalOOM :: TestName -> IO String -> TestTree
+testLocalOOM name assertion = testCaseInfo name $ \w0 ->
+    let !(# w1, mEx #) = unwrapIO (E.try $ wrapIO assertion) w0
+    in case mEx of
+         Right _ -> unwrapIO (Tasty.assertFailure failure) w1
+         Left  e -> (# w1, success e #)
+  where
+    failure :: String
+    failure = "Expected LocalOutOfMemoryException"
+
+    success :: LocalOutOfMemoryException -> String
+    success LocalOOM{live} = "expected OOM (live: " ++ show live ++ " bytes)"
+
+assertEqualInfo :: (Show a, Eq a) => String -> a -> a -> IO String
+assertEqualInfo ok x y
+  | x == y    = \w -> (# w, ok #)
+  | otherwise = unwrapIO (E.throwIO $ userError $ show x ++ " /= " ++ show y)
+
+{-------------------------------------------------------------------------------
+  Top-level retrying exception handler
+-------------------------------------------------------------------------------}
+
+{-# NOINLINE retry #-}
+retry :: forall a. IO a -> IO a
+retry io = unwrapIO $ go 0
+  where
+    go :: Int -> GHC.IO.IO a
+    go retries = do
+        ma <- E.tryJust shouldCatch (wrapIO io)
+        case ma of
+          Right a -> return a
+          Left () -> go (retries + 1)
+      where
+        shouldCatch :: SomeException -> Maybe ()
+        shouldCatch _ | retries > 0 = Nothing
+                      | otherwise   = Just ()
+
+{-------------------------------------------------------------------------------
+  Check memory usage
+-------------------------------------------------------------------------------}
+
+newtype MemSize = MemSize Word64
+  deriving newtype (Eq, Ord, Num)
+
+instance Show MemSize where
+  show (MemSize sz) = addNumericUnderscores (show sz)
+
+mb :: MemSize
+mb = 1024 * 1024
+
+checkMem :: MemSize -> IO ()
+checkMem limit = unwrapIO $ do
+    statsEnabled <- getRTSStatsEnabled
+    if not statsEnabled then
+      E.throwIO RtsStatsNotEnabled
+    else do
+      performMajorGC
+      stats <- getRTSStats
+      let live = MemSize $ gcdetails_live_bytes (gc stats)
+      if live > limit
+        then E.throwIO LocalOOM{live, limit}
+        else return ()
+
+data LocalOutOfMemoryException = LocalOOM {
+      live  :: MemSize
+    , limit :: MemSize
+    }
+  deriving stock (Show)
+  deriving anyclass (Exception)
+
+-- | The tests depend on the @-T@ RTS flag
+--
+-- <https://downloads.haskell.org/ghc/latest/docs/users_guide/runtime_control.html#rts-options-to-produce-runtime-statistics>
+data RtsStatsNotEnabled = RtsStatsNotEnabled
+  deriving stock (Show)
+  deriving anyclass (Exception)
+
+{-------------------------------------------------------------------------------
+  Conduit definition
+-------------------------------------------------------------------------------}
+
+data Conduit i o m r =
+    Yield o (Conduit i o m r)
+  | Await (Either r i -> Conduit i o m r)
+  | Effect (m (Conduit i o m r))
+  | Done r

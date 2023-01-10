@@ -1,32 +1,66 @@
 cabal-version:      3.0
 name:               dupIO
 version:            0.1.0
--- synopsis:
--- description:
+synopsis:           Duplicate any closure
+description:        This is a revival of the old @ghc-dup@ package, and offers
+
+                    > dupIO :: a -> IO a
+
+                    which can be used to construct a shallow copy of any
+                    closure.
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Edsko de Vries
+                    Joachim Breitner
+                    Douglas Wilson
 maintainer:         edsko@well-typed.com
 copyright:          Well-Typed LLP
 category:           Development
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
+tested-with:        GHC ==8.6.5  ||
+                        ==8.8.4  ||
+                        ==8.10.7 ||
+                        ==9.0.2  ||
+                        ==9.2.4  ||
+                        ==9.4.2
+
+source-repository head
+  type:     git
+  location: https://github.com/well-typed/dupIO
 
 common lang
   ghc-options:
       -Wall
   build-depends:
-      base >= 4.12
+      base >= 4.12 && < 4.18
   default-language:
       Haskell2010
+  default-extensions:
+      BangPatterns
+      DeriveAnyClass
+      DerivingStrategies
+      GeneralizedNewtypeDeriving
+      NamedFieldPuns
+      NumericUnderscores
+      ScopedTypeVariables
+      TypeApplications
 
 library
   import:
       lang
   exposed-modules:
-      Data.DupIO
+      Data.Dup.IO
+      Data.Dup.ST
+  other-modules:
+      Data.Dup.Internal
   hs-source-dirs:
       src
+  c-sources:
+      cbits/dup-prim.cmm
+      cbits/dup.c
+  build-depends:
+      ghc-prim
 
 test-suite test-dupIO
   import:
@@ -37,6 +71,54 @@ test-suite test-dupIO
       test
   main-is:
       Main.hs
+  other-modules:
+      Test.Average
+      Test.Conduit.Source
+      Test.Sanity.DupIO
+      Test.Sanity.TestSetup
+      Test.Util
+      Test.Util.TestSetup
   build-depends:
     , dupIO
+    , ghc-prim
     , tasty
+    , tasty-hunit
+  default-extensions:
+      UnboxedTuples
+      MagicHash
+  ghc-options:
+      -with-rtsopts -T
+      -fno-full-laziness
+      -fno-state-hack
+
+executable demo-averageIO
+  import:
+      lang
+  hs-source-dirs:
+      demo
+  main-is:
+      AverageIO.hs
+  build-depends:
+    , dupIO
+
+  if !flag(build-demos)
+    buildable:
+      False
+
+executable demo-averageST
+  import:
+      lang
+  hs-source-dirs:
+      demo
+  main-is:
+      AverageST.hs
+  build-depends:
+    , dupIO
+
+  if !flag(build-demos)
+    buildable:
+      False
+
+flag build-demos
+  manual: True
+  default: False

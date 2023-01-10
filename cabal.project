@@ -1,0 +1,10 @@
+packages: .
+
+-- Disable optimization (we want to be in full control).
+-- This is taken into account by haskell-ci.
+optimization: 0
+
+package dupIO
+  tests: true
+  flags: +build-demos
+
