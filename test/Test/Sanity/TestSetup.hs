@@ -32,10 +32,10 @@ import Test.Util.TestSetup
 -- length of the list.
 tests :: TestTree
 tests = testGroup "Test.Sanity.TestSetup" [
-      testLocalOOM "expensive" $ testOfSize 250_000
-    , testCaseInfo "cheap"     $ testOfSize     100
-    , testLocalOOM "expensive" $ testOfSize 250_000
-    , testCaseInfo "cheap"     $ testOfSize     100
+      testLocalOOM "OOM.expensive" $ testOfSize 250_000
+    , testCaseInfo "OK.cheap"      $ testOfSize     100
+    , testLocalOOM "OOM.expensive" $ testOfSize 250_000
+    , testCaseInfo "OK.cheap"      $ testOfSize     100
     ]
 
 testOfSize :: Int -> IO String

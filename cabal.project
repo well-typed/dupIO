@@ -6,5 +6,5 @@ optimization: 0
 
 package dupIO
   tests: true
-  flags: +build-demos
+  flags: +build-demos +use-debug-RTS
 
