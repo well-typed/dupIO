@@ -19,7 +19,7 @@ tests = testGroup "Test.Conduit.Sink" [
       testLocalOOM "OOM.withoutDupIO" test_withoutDupIO
     , testCaseInfo "OK.outerDupIO"    test_outerDupIO
     , testCaseInfo "OK.innerDupIO"    test_innerDupIO
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
 test_withoutDupIO :: IO String
