@@ -16,7 +16,7 @@ tests = testGroup "Test.DupIO.Conduit.Sink" [
       testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
     , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -47,8 +47,8 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
+test_cafWithDupIO :: IO String
+test_cafWithDupIO = \w0 ->
     let !(# w1, _count #) = retry (innerDupIO limit 'a' caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
   where
