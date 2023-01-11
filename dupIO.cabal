@@ -73,6 +73,8 @@ test-suite test-dupIO
       Main.hs
   other-modules:
       Test.Average
+      Test.Conduit.Effect
+      Test.Conduit.Sink
       Test.Conduit.Source
       Test.Sanity.DupIO
       Test.Sanity.TestSetup
@@ -87,9 +89,14 @@ test-suite test-dupIO
       UnboxedTuples
       MagicHash
   ghc-options:
-      -with-rtsopts -T
+      -with-rtsopts "-T"
       -fno-full-laziness
       -fno-state-hack
+
+  if flag(use-debug-RTS)
+    ghc-options:
+      -with-rtsopts "-T -DS"
+      -debug
 
 executable demo-averageIO
   import:
@@ -120,5 +127,9 @@ executable demo-averageST
       False
 
 flag build-demos
+  manual: True
+  default: False
+
+flag use-debug-RTS
   manual: True
   default: False
