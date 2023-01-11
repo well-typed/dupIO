@@ -44,7 +44,7 @@ dupClosure(P_ clos)
         (len) = foreign "C" closure_sizeW(clos "ptr");
         bytes = WDS(len);
 
-        ALLOC_PRIM (bytes);
+        ALLOC_PRIM_P(bytes, dupClosure, clos);
 
         W_ copy;
         copy = Hp - bytes + WDS(1);
