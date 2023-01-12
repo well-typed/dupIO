@@ -6,6 +6,7 @@ module Test.Util.TestSetup (
   , unsafePerformIO
   , evaluate
   , (<*)
+  , dupIO
     -- ** In tasty
   , Assertion
   , testCase
@@ -19,8 +20,6 @@ module Test.Util.TestSetup (
   , mb
   , checkMem
   , LocalOutOfMemoryException -- opaque
-    -- * Conduit definition
-  , Conduit(..)
   ) where
 
 import Prelude hiding (IO, (<*))
@@ -33,6 +32,7 @@ import GHC.Stats
 import System.Mem
 import Test.Tasty (TestName, TestTree)
 
+import qualified Data.Dup.IO       as DupIO
 import qualified Control.Exception as E
 import qualified GHC.IO            as GHC.IO
 import qualified Test.Tasty.HUnit  as Tasty
@@ -63,6 +63,9 @@ f <* g = \w0 ->
         !(# w2, () #) = g w1
     in (# w2, a #)
 
+dupIO :: forall a. a -> IO a
+dupIO = coerce (DupIO.dupIO @a)
+
 {-------------------------------------------------------------------------------
   Unwrapped IO in assertions
 -------------------------------------------------------------------------------}
@@ -85,10 +88,12 @@ testLocalOOM name assertion = testCaseInfo name $ \w0 ->
          Left  e -> (# w1, success e #)
   where
     failure :: String
-    failure = "Expected LocalOutOfMemoryException"
+    failure =
+        "did not get expected LocalOutOfMemoryException"
 
     success :: LocalOutOfMemoryException -> String
-    success LocalOOM{live} = "expected OOM (live: " ++ show live ++ " bytes)"
+    success LocalOOM{live} =
+        "got expected OOM (live: " ++ show live ++ " bytes)"
 
 assertEqualInfo :: (Show a, Eq a) => String -> a -> a -> IO String
 assertEqualInfo ok x y
@@ -153,13 +158,3 @@ data LocalOutOfMemoryException = LocalOOM {
 data RtsStatsNotEnabled = RtsStatsNotEnabled
   deriving stock (Show)
   deriving anyclass (Exception)
-
-{-------------------------------------------------------------------------------
-  Conduit definition
--------------------------------------------------------------------------------}
-
-data Conduit i o m r =
-    Yield o (Conduit i o m r)
-  | Await (Either r i -> Conduit i o m r)
-  | Effect (m (Conduit i o m r))
-  | Done r

@@ -10,7 +10,7 @@ import Data.Dup.IO
 
 tests :: TestTree
 tests = testGroup "Test.Sanity.DupIO" [
-      testCase "observeEvaluation" test_observeEvaluation
+      testCase "observeEvaluation.OK" test_observeEvaluation
     ]
 
 test_observeEvaluation :: Assertion

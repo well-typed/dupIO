@@ -40,7 +40,10 @@ common lang
       BangPatterns
       DeriveAnyClass
       DerivingStrategies
+      EmptyCase
       GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
       NamedFieldPuns
       NumericUnderscores
       ScopedTypeVariables
@@ -73,12 +76,18 @@ test-suite test-dupIO
       Main.hs
   other-modules:
       Test.Average
-      Test.Conduit.Effect
+      Test.Conduit.Closed
       Test.Conduit.Sink
       Test.Conduit.Source
+      Test.Conduit.Source.Bidirectional
       Test.Sanity.DupIO
       Test.Sanity.TestSetup
       Test.Util
+      Test.Util.Conduit.Bidirectional
+      Test.Util.Conduit.Closed
+      Test.Util.Conduit.Sink
+      Test.Util.Conduit.Source
+      Test.Util.Conduit.Source.Bidirectional
       Test.Util.TestSetup
   build-depends:
     , dupIO
