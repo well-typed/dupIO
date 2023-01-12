@@ -15,7 +15,7 @@ tests :: TestTree
 tests = testGroup "Test.Conduit.Sink" [
       testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
---    , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
+    , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
 --    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
@@ -37,8 +37,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_innerDupIO_partiallyEvaluated :: IO String
-_test_innerDupIO_partiallyEvaluated = \w0 ->
+test_innerDupIO_partiallyEvaluated :: IO String
+test_innerDupIO_partiallyEvaluated = \w0 ->
     let c                 = countChars 0
         !(# w1, c'     #) = evaluate c                                           w0
         !(# w2, _count #) = retry (innerDupIO limit 'a' c' <* checkMem (1 * mb)) w1

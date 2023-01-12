@@ -13,18 +13,18 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.Conduit.Source.Bidirectional" [
---      testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
+      testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
     ]
 
-_test_innerDupIO_partiallyEvaluated :: IO String
-_test_innerDupIO_partiallyEvaluated = \w0 ->
+test_innerDupIO_partiallyEvaluated :: IO String
+test_innerDupIO_partiallyEvaluated = \w0 ->
     let c               = yieldFrom limit
         !(# w1, c'   #) = evaluate c                                 w0
         !(# w2, _sum #) = retry (innerDupIO c' <* checkMem (1 * mb)) w1
     in (# w2, "succeeded with 1MB memory limit" #)
   where
     limit :: Int
-    limit = 10_250_000
+    limit = 250_000
 
 {-------------------------------------------------------------------------------
   Constructing and processing sources
