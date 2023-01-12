@@ -15,7 +15,7 @@ tests :: TestTree
 tests = testGroup "Test.Conduit.Sink" [
       testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
---    , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
+    , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
 --    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
@@ -37,8 +37,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_innerDupIO_partiallyEvaluated :: IO String
-_test_innerDupIO_partiallyEvaluated = \w0 ->
+test_innerDupIO_partiallyEvaluated :: IO String
+test_innerDupIO_partiallyEvaluated = \w0 ->
     let c                 = countChars 0
         !(# w1, c'     #) = evaluate c                                           w0
         !(# w2, _count #) = retry (innerDupIO limit 'a' c' <* checkMem (1 * mb)) w1
@@ -60,6 +60,8 @@ _test_cafWithDupIO = \w0 ->
 
   The strange way that 'countChars' is written is modelling what
   full laziness may very well do to your conduit.
+
+  See "Test.Conduit.Source.Bidirectional" for a discussion of @Box@.
 -------------------------------------------------------------------------------}
 
 {-# NOINLINE caf #-}
@@ -72,8 +74,8 @@ countChars cnt =
     let k = let !cnt' = cnt + 1
             in countChars cnt'
     in Await $ \case
-         Nothing -> Done cnt
-         Just _  -> k
+         Nothing -> Box $ Done cnt
+         Just _  -> Box $ k
 
 {-# NOINLINE runConduit #-}
 runConduit :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
@@ -82,8 +84,8 @@ runConduit limit ch =
   where
     go :: Int -> Sink (Maybe Char) Int -> IO Int
     go _ (Done r)  = \w0 -> (# w0, r #)
-    go 0 (Await k) = \w0 -> go 0     (k Nothing)   w0
-    go n (Await k) = \w0 -> go (n-1) (k (Just ch)) w0
+    go 0 (Await k) = \w0 -> go 0     (unbox $ k Nothing)   w0
+    go n (Await k) = \w0 -> go (n-1) (unbox $ k (Just ch)) w0
 
 {-# NOINLINE innerDupIO #-}
 innerDupIO :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
@@ -97,5 +99,5 @@ innerDupIO limit ch =
 
     go' :: Int -> Sink (Maybe Char) Int -> IO Int
     go' _ (Done r)  = \w0 -> (# w0, r #)
-    go' 0 (Await k) = \w0 -> go 0     (k Nothing)   w0
-    go' n (Await k) = \w0 -> go (n-1) (k (Just ch)) w0
+    go' 0 (Await k) = \w0 -> case k Nothing   of Box k' -> go 0     k' w0
+    go' n (Await k) = \w0 -> case k (Just ch) of Box k' -> go (n-1) k' w0
