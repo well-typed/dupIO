@@ -32,10 +32,10 @@ import Test.Util.TestSetup
 -- length of the list.
 tests :: TestTree
 tests = testGroup "Test.Sanity.TestSetup" [
-      testLocalOOM "OOM.expensive" $ testOfSize 250_000
-    , testCaseInfo "OK.cheap"      $ testOfSize     100
-    , testLocalOOM "OOM.expensive" $ testOfSize 250_000
-    , testCaseInfo "OK.cheap"      $ testOfSize     100
+      testLocalOOM "expensive.OOM" $ testOfSize 250_000
+    , testCaseInfo "cheap.OK"      $ testOfSize     100
+    , testLocalOOM "expensive.OOM" $ testOfSize 250_000
+    , testCaseInfo "cheap.OK"      $ testOfSize     100
     ]
 
 testOfSize :: Int -> IO String
@@ -52,5 +52,5 @@ count = \xs w -> go 0 xs w
   where
     go :: Int -> [a] -> IO Int
     go acc []     = \w -> (# w, acc #)
-    go acc (_:xs) = \w -> let acc' = acc + 1
-                          in acc' `seq` go acc' xs w
+    go acc (_:xs) = \w -> let !acc' = acc + 1
+                          in go acc' xs w

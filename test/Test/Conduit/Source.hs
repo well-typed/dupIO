@@ -2,11 +2,9 @@ module Test.Conduit.Source (tests) where
 
 import Prelude hiding (IO, (<*))
 
-import Data.Functor.Identity
 import Test.Tasty
 
-import Data.Dup.IO
-
+import Test.Util.Conduit.Source
 import Test.Util.TestSetup
 
 {-------------------------------------------------------------------------------
@@ -23,9 +21,11 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.Conduit.Source" [
-      testLocalOOM "OOM.withoutDupIO" test_withoutDupIO
-    , testCaseInfo "OK.outerDupIO"    test_outerDupIO
-    , testCaseInfo "OK.innerDupIO"    test_innerDupIO
+      testLocalOOM "withoutDupIO.OOM"                  test_withoutDupIO
+    , testCaseInfo "outerDupIO.OK"                     test_outerDupIO
+    , testLocalOOM "outerDupIO_partiallyEvaluated.OOM" test_outerDupIO_partiallyEvaluated
+    , testCaseInfo "innerDupIO.OK"                     test_innerDupIO
+    , testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
 --    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
@@ -47,6 +47,16 @@ test_outerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
+test_outerDupIO_partiallyEvaluated :: IO String
+test_outerDupIO_partiallyEvaluated = \w0 ->
+    let c = yieldFrom limit
+        !(# w1, c'   #) = evaluate c                                 w0
+        !(# w2, _sum #) = retry (outerDupIO c' <* checkMem (1 * mb)) w1
+    in (# w2, "succeeded with 1MB memory limit" #)
+  where
+    limit :: Int
+    limit = 250_000
+
 test_innerDupIO :: IO String
 test_innerDupIO = \w0 ->
     let c = yieldFrom limit
@@ -56,8 +66,18 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_cafWithDupIO :: IO String
-test_cafWithDupIO = \w0 ->
+test_innerDupIO_partiallyEvaluated :: IO String
+test_innerDupIO_partiallyEvaluated = \w0 ->
+    let c = yieldFrom limit
+        !(# w1, c'   #) = evaluate c                                 w0
+        !(# w2, _sum #) = retry (innerDupIO c' <* checkMem (1 * mb)) w1
+    in (# w2, "succeeded with 1MB memory limit" #)
+  where
+    limit :: Int
+    limit = 250_000
+
+_test_cafWithDupIO :: IO String
+_test_cafWithDupIO = \w0 ->
     let !(# w1, _sum #) = retry (outerDupIO caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
@@ -70,44 +90,47 @@ test_cafWithDupIO = \w0 ->
 -------------------------------------------------------------------------------}
 
 {-# NOINLINE caf #-}
-caf :: Conduit () Int Identity ()
+caf :: Source Int ()
 caf = yieldFrom limit
   where
     limit :: Int
     limit = 250_000
 
 {-# NOINLINE yieldFrom #-}
-yieldFrom :: Int -> Conduit i Int m ()
+yieldFrom :: Int -> Source Int ()
 yieldFrom 0 = Done ()
-yieldFrom n = Yield n $ yieldFrom (n - 1)
+yieldFrom n = let k = yieldFrom (n - 1)
+              in Yield n $ k
 
 {-# NOINLINE runConduit #-}
-runConduit :: Conduit i Int m () -> IO Int
+runConduit :: Source Int () -> IO Int
 runConduit = go 0
   where
-    go :: Int -> Conduit i Int m () -> IO Int
-    go acc (Done ())   = \w -> (# w, acc #)
-    go acc (Yield o k) = \w -> let acc' = acc + o
-                               in acc' `seq` go acc' k w
-    go _ _ = error "runConduit: unexpected conduit"
+    go :: Int -> Source Int () -> IO Int
+    go acc (Done ()) = \w0 ->
+        (# w0, acc #)
+    go acc (Yield b k) = \w0 ->
+        let !acc' = acc + b
+        in go acc' k w0
 
 {-# NOINLINE outerDupIO #-}
-outerDupIO :: Conduit i Int m () -> IO Int
+outerDupIO :: Source Int () -> IO Int
 outerDupIO c = \w0 ->
-    let !(# w1, c' #) = unwrapIO (dupIO c) w0
+    let !(# w1, c' #) = dupIO c w0
     in runConduit c' w1
 
 {-# NOINLINE innerDupIO #-}
-innerDupIO :: Conduit i Int m () -> IO Int
+innerDupIO :: Source Int () -> IO Int
 innerDupIO = go 0
   where
-    go :: Int -> Conduit i Int m () -> IO Int
+    go :: Int -> Source Int () -> IO Int
     go acc c w0 =
-        let !(# w1, c' #) = unwrapIO (dupIO c) w0
+        let !(# w1, c' #) = dupIO c w0
         in go' acc c' w1
 
-    go' :: Int -> Conduit i Int m () -> IO Int
-    go' acc (Done ())   = \w -> (# w, acc #)
-    go' acc (Yield o k) = \w -> let acc' = acc + o
-                                in acc' `seq` go acc' k w
-    go' _ _ = error "runConduit: unexpected conduit"
+    go' :: Int -> Source Int () -> IO Int
+    go' acc (Done ()) = \w0 ->
+        (# w0, acc #)
+    go' acc (Yield b k) = \w0 ->
+        let !acc' = acc + b
+        in go acc' k w0
