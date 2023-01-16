@@ -1,4 +1,4 @@
-module Test.Conduit.Source (tests) where
+module Test.DupIO.Conduit.Source (tests) where
 
 import Prelude hiding (IO, (<*))
 
@@ -20,7 +20,7 @@ import Test.Util.TestSetup
 -------------------------------------------------------------------------------}
 
 tests :: TestTree
-tests = testGroup "Test.Conduit.Source" [
+tests = testGroup "Test.DupIO.Conduit.Source" [
       testLocalOOM "withoutDupIO.OOM"                  test_withoutDupIO
     , testCaseInfo "outerDupIO.OK"                     test_outerDupIO
     , testLocalOOM "outerDupIO_partiallyEvaluated.OOM" test_outerDupIO_partiallyEvaluated
@@ -82,7 +82,7 @@ _test_cafWithDupIO = \w0 ->
     in (# w1, "succeeded with 1MB memory limit" #)
 
 {-------------------------------------------------------------------------------
-  Constructing and processing sources
+  Interpreter
 
   All recursion happens _inside_ the @State# Realworld ->@ lambda; see
   <https://well-typed.com/blog/2016/09/sharing-conduit/#addendum-1-ghcs-state-hack>
@@ -95,12 +95,6 @@ caf = yieldFrom limit
   where
     limit :: Int
     limit = 250_000
-
-{-# NOINLINE yieldFrom #-}
-yieldFrom :: Int -> Source Int ()
-yieldFrom 0 = Done ()
-yieldFrom n = let k = yieldFrom (n - 1)
-              in Yield n $ k
 
 {-# NOINLINE runConduit #-}
 runConduit :: Source Int () -> IO Int

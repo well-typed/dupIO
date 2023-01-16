@@ -3,6 +3,7 @@
 
 module Data.Dup.IO (
     dupIO
+  , dup
   ) where
 
 import GHC.IO
@@ -95,3 +96,9 @@ import Data.Dup.Internal
 -- the @IORef@ will be updated twice.
 dupIO :: a -> IO a
 dupIO = IO . dup#
+
+-- | Pure version of 'dupIO'
+--
+-- TODO: Docs
+dup :: a -> a
+dup = unsafePerformIO . dupIO

@@ -49,6 +49,10 @@ common lang
       ScopedTypeVariables
       TypeApplications
 
+--------------------------------------------------------------------------------
+-- Main library
+--------------------------------------------------------------------------------
+
 library
   import:
       lang
@@ -65,6 +69,14 @@ library
   build-depends:
       ghc-prim
 
+--------------------------------------------------------------------------------
+-- Testing
+--------------------------------------------------------------------------------
+
+flag use-debug-RTS
+  manual:  True
+  default: False
+
 test-suite test-dupIO
   import:
       lang
@@ -76,11 +88,14 @@ test-suite test-dupIO
       Main.hs
   other-modules:
       Test.Average
-      Test.Conduit.Closed
-      Test.Conduit.Sink
-      Test.Conduit.Source
-      Test.Conduit.Source.Bidirectional
-      Test.Conduit.Source.IO
+      Test.Dup.Conduit.Closed
+      Test.Dup.Conduit.Sink
+      Test.Dup.Conduit.Source
+      Test.DupIO.Conduit.Closed
+      Test.DupIO.Conduit.Sink
+      Test.DupIO.Conduit.Source
+      Test.DupIO.Conduit.Source.Bidirectional
+      Test.DupIO.Conduit.Source.IO
       Test.Sanity.DupIO
       Test.Sanity.TestSetup
       Test.Util
@@ -109,38 +124,39 @@ test-suite test-dupIO
       -with-rtsopts "-T -DS"
       -debug
 
-executable demo-averageIO
-  import:
-      lang
-  hs-source-dirs:
-      demo
-  main-is:
-      AverageIO.hs
-  build-depends:
-    , dupIO
-
-  if !flag(build-demos)
-    buildable:
-      False
-
-executable demo-averageST
-  import:
-      lang
-  hs-source-dirs:
-      demo
-  main-is:
-      AverageST.hs
-  build-depends:
-    , dupIO
-
-  if !flag(build-demos)
-    buildable:
-      False
+--------------------------------------------------------------------------------
+-- Demos
+--
+-- NOTE: HLS seems to get confused when @hs-source-dirs@ is defined in a common
+-- stanza, so we repeat it for each demo.
+--------------------------------------------------------------------------------
 
 flag build-demos
-  manual: True
+  manual:  True
   default: False
 
-flag use-debug-RTS
-  manual: True
-  default: False
+common demo
+  import:        lang
+  build-depends: dupIO
+  if !flag(build-demos)
+    buildable: False
+
+executable demo-averageIO
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        AverageIO.hs
+
+executable demo-averageST
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        AverageST.hs
+
+executable demo-conduit
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        Conduit.hs
+
+executable demo-conduit-ref
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        ConduitRef.hs

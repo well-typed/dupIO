@@ -7,6 +7,7 @@ module Test.Util.TestSetup (
   , evaluate
   , (<*)
   , dupIO
+  , replicateM_
     -- ** In tasty
   , Assertion
   , testCase
@@ -32,8 +33,9 @@ import GHC.Stats
 import System.Mem
 import Test.Tasty (TestName, TestTree)
 
-import qualified Data.Dup.IO       as DupIO
 import qualified Control.Exception as E
+import qualified Control.Monad     as Control.Monad
+import qualified Data.Dup.IO       as DupIO
 import qualified GHC.IO            as GHC.IO
 import qualified Test.Tasty.HUnit  as Tasty
 
@@ -101,7 +103,7 @@ assertEqualInfo ok x y
   | otherwise = unwrapIO (E.throwIO $ userError $ show x ++ " /= " ++ show y)
 
 {-------------------------------------------------------------------------------
-  Top-level retrying exception handler
+  Top-level handlers
 -------------------------------------------------------------------------------}
 
 {-# NOINLINE retry #-}
@@ -112,12 +114,25 @@ retry io = unwrapIO $ go 0
     go retries = do
         ma <- E.tryJust shouldCatch (wrapIO io)
         case ma of
-          Right a -> return a
-          Left () -> go (retries + 1)
+          Right a ->
+            return a
+          Left e -> do
+            putStrLn $ "retry: trying again after " ++ show e
+            go (retries + 1)
       where
-        shouldCatch :: SomeException -> Maybe ()
-        shouldCatch _ | retries > 0 = Nothing
-                      | otherwise   = Just ()
+        shouldCatch :: SomeException -> Maybe SomeException
+        shouldCatch e
+          | retries > 0
+          = Nothing
+
+          | Just LocalOOM{} <- E.fromException e
+          = Nothing
+
+          | otherwise
+          = Just e
+
+replicateM_ :: Int -> IO () -> IO ()
+replicateM_ n io = unwrapIO $ Control.Monad.replicateM_ n (wrapIO io)
 
 {-------------------------------------------------------------------------------
   Check memory usage
