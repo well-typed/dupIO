@@ -80,6 +80,7 @@ test-suite test-dupIO
       Test.Conduit.Sink
       Test.Conduit.Source
       Test.Conduit.Source.Bidirectional
+      Test.Conduit.Source.IO
       Test.Sanity.DupIO
       Test.Sanity.TestSetup
       Test.Util
@@ -88,6 +89,7 @@ test-suite test-dupIO
       Test.Util.Conduit.Sink
       Test.Util.Conduit.Source
       Test.Util.Conduit.Source.Bidirectional
+      Test.Util.Conduit.Source.IO
       Test.Util.TestSetup
   build-depends:
     , dupIO
