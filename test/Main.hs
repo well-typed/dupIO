@@ -7,6 +7,7 @@ import qualified Test.Conduit.Closed
 import qualified Test.Conduit.Sink
 import qualified Test.Conduit.Source
 import qualified Test.Conduit.Source.Bidirectional
+import qualified Test.Conduit.Source.IO
 import qualified Test.Sanity.DupIO
 import qualified Test.Sanity.TestSetup
 
@@ -18,6 +19,7 @@ main = defaultMain $ testGroup "dupIO" [
     , testGroup "Conduit" [
           Test.Conduit.Source.tests
         , Test.Conduit.Source.Bidirectional.tests
+        , Test.Conduit.Source.IO.tests
         , Test.Conduit.Sink.tests
         , Test.Conduit.Closed.tests
         ]
