@@ -5,7 +5,7 @@
 -- This depends on @-O1@, for reasons explained in @demo/Conduit.hs@.
 module Main (main) where
 
-import Data.Dup.IO
+import Data.Dup (dup)
 
 data Source = Done | Yield {-# UNPACK #-} !Int Source
 

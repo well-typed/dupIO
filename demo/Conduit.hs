@@ -7,7 +7,7 @@
 module Main (main) where
 
 import Prelude (print)
-import Data.Dup.IO (dup)
+import Data.Dup (dup)
 import GHC.IO (IO(..), unIO)
 import GHC.Exts (Int(..), (-#), State#, RealWorld, Int#)
 import qualified Prelude as P
