@@ -1,4 +1,4 @@
-module Test.Conduit.Closed (tests) where
+module Test.DupIO.Conduit.Closed (tests) where
 
 import Prelude hiding (IO, (<*))
 import qualified Prelude
@@ -16,7 +16,7 @@ import Test.Util.TestSetup
 -------------------------------------------------------------------------------}
 
 tests :: TestTree
-tests = testGroup "Test.Conduit.Closed" [
+tests = testGroup "Test.DupIO.Conduit.Closed" [
       testLocalOOM "withoutDupIO.OOM" test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"    test_innerDupIO
 --    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
@@ -48,7 +48,7 @@ _test_cafWithDupIO = \w0 ->
     in (# w1, "succeeded with 1MB memory limit" #)
 
 {-------------------------------------------------------------------------------
-  Constructing and processing conduits with effects
+  Interpreter
 -------------------------------------------------------------------------------}
 
 {-# NOINLINE globalIORef #-}
@@ -61,14 +61,6 @@ caf = addFrom globalIORef limit
   where
     limit :: Int
     limit = 100_000
-
-{-# NOINLINE addFrom #-}
-addFrom :: IORef Int -> Int -> Closed Prelude.IO ()
-addFrom ref = go
-  where
-    go :: Int -> Closed Prelude.IO ()
-    go 0 = Done ()
-    go n = Lift $ modifyIORef' ref (+ n) >> return (go (n - 1))
 
 {-# NOINLINE runConduit #-}
 runConduit :: Closed Prelude.IO () -> IO ()
@@ -84,7 +76,7 @@ innerDupIO :: Closed Prelude.IO () -> IO ()
 innerDupIO = go
   where
     go :: Closed Prelude.IO () -> IO ()
-    go c w0 =
+    go c = \w0 ->
         let !(# w1, c' #) = dupIO c w0
         in go' c' w1
 

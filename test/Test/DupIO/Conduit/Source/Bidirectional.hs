@@ -1,4 +1,4 @@
-module Test.Conduit.Source.Bidirectional (tests) where
+module Test.DupIO.Conduit.Source.Bidirectional (tests) where
 
 import Prelude hiding (IO, (<*))
 
@@ -12,7 +12,7 @@ import Test.Util.TestSetup
 -------------------------------------------------------------------------------}
 
 tests :: TestTree
-tests = testGroup "Test.Conduit.Source.Bidirectional" [
+tests = testGroup "Test.DupIO.Conduit.Source.Bidirectional" [
       testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
     ]
 
@@ -27,7 +27,7 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit = 250_000
 
 {-------------------------------------------------------------------------------
-  Constructing and processing sources
+  Interpreter
 
   NOTE: The need for Box here is very subtle. Without it, the case for @Yield@
   in @go'@ in @innerDupIO@ would look like
@@ -43,12 +43,6 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
   TODO: This feels fragile, but I can't quite oversee quite how fragile. What is
   the exact invariant we need? How easy is it to get this wrong?
 -------------------------------------------------------------------------------}
-
-{-# NOINLINE yieldFrom #-}
-yieldFrom :: Int -> Source () Int ()
-yieldFrom 0 = Done ()
-yieldFrom n = let k = yieldFrom (n - 1)
-              in Yield n $ \() -> Box k
 
 {-# NOINLINE innerDupIO #-}
 innerDupIO :: Source () Int () -> IO Int

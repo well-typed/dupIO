@@ -1,4 +1,4 @@
-module Test.Conduit.Sink (tests) where
+module Test.DupIO.Conduit.Sink (tests) where
 
 import Prelude hiding (IO, (<*))
 
@@ -12,7 +12,7 @@ import Test.Util.TestSetup
 -------------------------------------------------------------------------------}
 
 tests :: TestTree
-tests = testGroup "Test.Conduit.Sink" [
+tests = testGroup "Test.DupIO.Conduit.Sink" [
       testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
     , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
@@ -56,10 +56,7 @@ _test_cafWithDupIO = \w0 ->
     limit = 250_000
 
 {-------------------------------------------------------------------------------
-  Constructing and processing sinks
-
-  The strange way that 'countChars' is written is modelling what
-  full laziness may very well do to your conduit.
+  Interpreter
 
   See "Test.Conduit.Source.Bidirectional" for a discussion of @Box@.
 -------------------------------------------------------------------------------}
@@ -67,15 +64,6 @@ _test_cafWithDupIO = \w0 ->
 {-# NOINLINE caf #-}
 caf :: Sink (Maybe Char) Int
 caf = countChars 0
-
-{-# NOINLINE countChars #-}
-countChars :: Int -> Sink (Maybe Char) Int
-countChars cnt =
-    let k = let !cnt' = cnt + 1
-            in countChars cnt'
-    in Await $ \case
-         Nothing -> Box $ Done cnt
-         Just _  -> Box $ k
 
 {-# NOINLINE runConduit #-}
 runConduit :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
