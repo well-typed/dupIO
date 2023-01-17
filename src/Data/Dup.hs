@@ -88,7 +88,11 @@ import Data.Dup.Internal
 -- By duplicating the closure before we pattern match on it, the original
 -- closure remains a thunk, and we never unfold the conduit in memory.
 --
--- = Use in pure contexts
+-- __NOTE__: I\/O code often depends on ghc optimizations to run in constant
+-- space; code compiled with @-O0@ can leak for many reasons. Compile with
+-- @-O1@ or better.
+--
+-- = Usage in pure contexts
 --
 -- The disadvantage of 'dupIO' is that it lives in @IO@. It /is/ possible to
 -- rewrite 'runSource' using the pure function @dup@ as:
