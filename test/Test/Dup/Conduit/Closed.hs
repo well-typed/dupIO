@@ -6,9 +6,10 @@ import qualified Prelude
 import Data.IORef
 import Test.Tasty
 
+import Data.Dup (dup)
+
 import Test.Util.TestSetup
 import Test.Util.Conduit.Closed
-import Data.Dup.IO
 
 {-------------------------------------------------------------------------------
   Tests

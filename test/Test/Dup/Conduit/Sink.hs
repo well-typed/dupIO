@@ -2,7 +2,7 @@ module Test.Dup.Conduit.Sink (tests) where
 
 import Prelude hiding (IO, (<*))
 
-import Data.Dup.IO
+import Data.Dup (dup)
 
 import Test.Tasty
 

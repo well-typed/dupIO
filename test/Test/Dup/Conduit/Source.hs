@@ -5,7 +5,7 @@ import Prelude hiding (IO, (<*))
 import Data.IORef
 import Test.Tasty
 
-import Data.Dup.IO (dup)
+import Data.Dup (dup)
 
 import Test.Util.Conduit.Source
 import Test.Util.TestSetup

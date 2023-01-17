@@ -11,14 +11,18 @@ import qualified Test.DupIO.Conduit.Sink
 import qualified Test.DupIO.Conduit.Source
 import qualified Test.DupIO.Conduit.Source.Bidirectional
 import qualified Test.DupIO.Conduit.Source.IO
-import qualified Test.Sanity.DupIO
+import qualified Test.DupIO.UnsafePerformIO
+import qualified Test.DupIO.UnsafeInterleaveIO
 import qualified Test.Sanity.TestSetup
 
 main :: IO ()
 main = defaultMain $ testGroup "dupIO" [
-      Test.Sanity.TestSetup.tests
+      testGroup "Sanity" [
+          Test.Sanity.TestSetup.tests
+        ]
     , testGroup "DupIO" [
-          Test.Sanity.DupIO.tests
+          Test.DupIO.UnsafePerformIO.tests
+        , Test.DupIO.UnsafeInterleaveIO.tests
         , Test.Average.tests
         , testGroup "Conduit" [
               Test.DupIO.Conduit.Source.tests

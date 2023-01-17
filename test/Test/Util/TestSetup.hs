@@ -35,7 +35,7 @@ import Test.Tasty (TestName, TestTree)
 
 import qualified Control.Exception as E
 import qualified Control.Monad     as Control.Monad
-import qualified Data.Dup.IO       as DupIO
+import qualified Data.Dup          as DupIO
 import qualified GHC.IO            as GHC.IO
 import qualified Test.Tasty.HUnit  as Tasty
 

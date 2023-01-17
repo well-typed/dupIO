@@ -1,4 +1,4 @@
-module Test.Sanity.DupIO (tests) where
+module Test.DupIO.UnsafePerformIO (tests) where
 
 import Control.Exception
 import Data.IORef
@@ -6,10 +6,10 @@ import System.IO.Unsafe
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Data.Dup.IO
+import Data.Dup
 
 tests :: TestTree
-tests = testGroup "Test.Sanity.DupIO" [
+tests = testGroup "Test.DupIO.UnsafePerformIO" [
       testCase "observeEvaluation.OK" test_observeEvaluation
     ]
 

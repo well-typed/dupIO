@@ -2,12 +2,8 @@ cabal-version:      3.0
 name:               dupIO
 version:            0.1.0
 synopsis:           Duplicate any closure
-description:        This is a revival of the old @ghc-dup@ package, and offers
-
-                    > dupIO :: a -> IO a
-
-                    which can be used to construct a shallow copy of any
-                    closure.
+description:        This is a revival of the old @ghc-dup@ package, and provides
+                    a way to make shallow copies of closures.
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Edsko de Vries
@@ -57,8 +53,7 @@ library
   import:
       lang
   exposed-modules:
-      Data.Dup.IO
-      Data.Dup.ST
+      Data.Dup
   other-modules:
       Data.Dup.Internal
   hs-source-dirs:
@@ -96,7 +91,8 @@ test-suite test-dupIO
       Test.DupIO.Conduit.Source
       Test.DupIO.Conduit.Source.Bidirectional
       Test.DupIO.Conduit.Source.IO
-      Test.Sanity.DupIO
+      Test.DupIO.UnsafeInterleaveIO
+      Test.DupIO.UnsafePerformIO
       Test.Sanity.TestSetup
       Test.Util
       Test.Util.Conduit.Bidirectional
