@@ -1,6 +1,6 @@
 import Data.Foldable
 
-import Data.Dup.IO
+import Data.Dup (dupIO)
 
 average :: [Int] -> IO Int
 average xs = do

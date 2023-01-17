@@ -1,7 +1,7 @@
 import Control.Monad.ST
 import Data.Foldable
 
-import Data.Dup.ST
+import Data.Dup (dupST)
 
 average :: [Int] -> Int
 average xs = runST $ do
