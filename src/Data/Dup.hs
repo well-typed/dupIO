@@ -13,6 +13,11 @@ import Data.Dup.Internal
 
 -- | Make shallow copy of a closure
 --
+-- This attempts to make a copy of the provided closure; if the closure type
+-- is unrecognized, the closure is returned as is. This is primarily useful
+-- for copying thunks (see Motivation, below). The copy is shallow: any other
+-- closures referenced by this one are /not/ copied.
+--
 -- = Motivation
 --
 -- In Haskell we often use data structures that do not represent /data/ per se
