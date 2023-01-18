@@ -20,6 +20,9 @@ is robust and specific about what happens when:
   when it is called (`\w -> let x = ..`) versus an IO action which references
   something that has already been allocated (`let x = .. in \w -> ..`).
 
+* We do not use any abstractions such as `>>` or `>>=`, instead writing
+  everything out. See the [LeakInIO](demo/LeakInIO.hs) demo for motivation.
+
 * The tests follow the same general structure outlined in the
   [Sharing, Space Leaks, and Conduit and friends](https://well-typed.com/blog/2016/09/sharing-conduit/)
   blog post, with some action referencing a conduit (i.e., this is of the form

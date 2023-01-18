@@ -156,3 +156,8 @@ executable demo-conduit-ref
   import:         demo
   hs-source-dirs: demo
   main-is:        ConduitRef.hs
+
+executable demo-leak-in-io
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        LeakInIO.hs
