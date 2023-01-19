@@ -19,7 +19,7 @@ tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Closed" [
       testLocalOOM "withoutDupIO.OOM" test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"    test_innerDupIO
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -42,8 +42,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 100_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
+test_cafWithDupIO :: IO String
+test_cafWithDupIO = \w0 ->
     let !(# w1, () #) = retry (innerDupIO caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
