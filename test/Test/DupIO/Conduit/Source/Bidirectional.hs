@@ -13,11 +13,11 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Source.Bidirectional" [
-      testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
+      testCaseInfo "sourceInnerDupIO_partiallyEvaluated.OK"  test_sourceInnerDupIO_partiallyEvaluated
     ]
 
-test_innerDupIO_partiallyEvaluated :: IO String
-test_innerDupIO_partiallyEvaluated = \w0 ->
+test_sourceInnerDupIO_partiallyEvaluated :: IO String
+test_sourceInnerDupIO_partiallyEvaluated = \w0 ->
     let c               = yieldFrom limit
         !(# w1, c'   #) = evaluate c                                 w0
         !(# w2, _sum #) = retry (innerDupIO c' <* checkMem (1 * mb)) w1

@@ -21,25 +21,25 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Source" [
-      testLocalOOM "withoutDupIO.OOM"                  test_withoutDupIO
-    , testCaseInfo "outerDupIO.OK"                     test_outerDupIO
-    , testLocalOOM "outerDupIO_partiallyEvaluated.OOM" test_outerDupIO_partiallyEvaluated
-    , testCaseInfo "innerDupIO.OK"                     test_innerDupIO
-    , testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+      testLocalOOM "sourceWithoutDupIO.OOM"                  test_sourceWithoutDupIO
+    , testCaseInfo "sourceOuterDupIO.OK"                     test_sourceOuterDupIO
+    , testLocalOOM "sourceOuterDupIO_partiallyEvaluated.OOM" test_sourceOuterDupIO_partiallyEvaluated
+    , testCaseInfo "sourceInnerDupIO.OK"                     test_sourceInnerDupIO
+    , testCaseInfo "sourceInnerDupIO_partiallyEvaluated.OK"  test_sourceInnerDupIO_partiallyEvaluated
+    , testLocalOOM "sourceCafWithoutDupIO.OOM"               test_sourceCafWithoutDupIO
     ]
 
-test_withoutDupIO :: IO String
-test_withoutDupIO = \w0 ->
+test_sourceWithoutDupIO :: IO String
+test_sourceWithoutDupIO = \w0 ->
     let c = yieldFrom limit
-        !(# w1, _sum #) = retry (runConduit c <* checkMem (1 * mb)) w0
+        !(# w1, _sum #) = retry (runSourceConduit c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
   where
     limit :: Int
     limit = 250_000
 
-test_outerDupIO :: IO String
-test_outerDupIO = \w0 ->
+test_sourceOuterDupIO :: IO String
+test_sourceOuterDupIO = \w0 ->
     let c = yieldFrom limit
         !(# w1, _sum #) = retry (outerDupIO c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -47,8 +47,8 @@ test_outerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_outerDupIO_partiallyEvaluated :: IO String
-test_outerDupIO_partiallyEvaluated = \w0 ->
+test_sourceOuterDupIO_partiallyEvaluated :: IO String
+test_sourceOuterDupIO_partiallyEvaluated = \w0 ->
     let c = yieldFrom limit
         !(# w1, c'   #) = evaluate c                                 w0
         !(# w2, _sum #) = retry (outerDupIO c' <* checkMem (1 * mb)) w1
@@ -57,8 +57,8 @@ test_outerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_innerDupIO :: IO String
-test_innerDupIO = \w0 ->
+test_sourceInnerDupIO :: IO String
+test_sourceInnerDupIO = \w0 ->
     let c = yieldFrom limit
         !(# w1, _sum #) = retry (innerDupIO c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -66,8 +66,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_innerDupIO_partiallyEvaluated :: IO String
-test_innerDupIO_partiallyEvaluated = \w0 ->
+test_sourceInnerDupIO_partiallyEvaluated :: IO String
+test_sourceInnerDupIO_partiallyEvaluated = \w0 ->
     let c = yieldFrom limit
         !(# w1, c'   #) = evaluate c                                 w0
         !(# w2, _sum #) = retry (innerDupIO c' <* checkMem (1 * mb)) w1
@@ -76,9 +76,9 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
-    let !(# w1, _sum #) = retry (outerDupIO caf <* checkMem (1 * mb)) w0
+test_sourceCafWithoutDupIO :: IO String
+test_sourceCafWithoutDupIO = \w0 ->
+    let !(# w1, _sum #) = (runSourceConduit caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
 {-------------------------------------------------------------------------------
@@ -96,9 +96,9 @@ caf = yieldFrom limit
     limit :: Int
     limit = 250_000
 
-{-# NOINLINE runConduit #-}
-runConduit :: Source Int () -> IO Int
-runConduit = go 0
+{-# NOINLINE runSourceConduit #-}
+runSourceConduit :: Source Int () -> IO Int
+runSourceConduit = go 0
   where
     go :: Int -> Source Int () -> IO Int
     go acc (Done ()) = \w0 ->
@@ -111,7 +111,7 @@ runConduit = go 0
 outerDupIO :: Source Int () -> IO Int
 outerDupIO c = \w0 ->
     let !(# w1, c' #) = dupIO c w0
-    in runConduit c' w1
+    in runSourceConduit c' w1
 
 {-# NOINLINE innerDupIO #-}
 innerDupIO :: Source Int () -> IO Int

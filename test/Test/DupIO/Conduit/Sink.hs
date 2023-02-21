@@ -13,23 +13,23 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Sink" [
-      testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
-    , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
-    , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
+      testLocalOOM "sinkWithoutDupIO.OOM"                 test_sinkWithoutDupIO
+    , testCaseInfo "sinkInnerDupIO.OK"                    test_sinkInnerDupIO
+    , testCaseInfo "sinkInnerDupIO_partiallyEvaluated.OK" test_sinkInnerDupIO_partiallyEvaluated
 --    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
     ]
 
-test_withoutDupIO :: IO String
-test_withoutDupIO = \w0 ->
+test_sinkWithoutDupIO :: IO String
+test_sinkWithoutDupIO = \w0 ->
     let c                 = countChars 0
-        !(# w1, _count #) = retry (runConduit limit 'a' c <* checkMem (1 * mb)) w0
+        !(# w1, _count #) = retry (runSinkConduit limit 'a' c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
   where
     limit :: Int
     limit = 250_000
 
-test_innerDupIO :: IO String
-test_innerDupIO = \w0 ->
+test_sinkInnerDupIO :: IO String
+test_sinkInnerDupIO = \w0 ->
     let c                 = countChars 0
         !(# w1, _count #) = retry (innerDupIO limit 'a' c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -37,8 +37,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_innerDupIO_partiallyEvaluated :: IO String
-test_innerDupIO_partiallyEvaluated = \w0 ->
+test_sinkInnerDupIO_partiallyEvaluated :: IO String
+test_sinkInnerDupIO_partiallyEvaluated = \w0 ->
     let c                 = countChars 0
         !(# w1, c'     #) = evaluate c                                           w0
         !(# w2, _count #) = retry (innerDupIO limit 'a' c' <* checkMem (1 * mb)) w1
@@ -47,8 +47,8 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
+_test_sinkCafWithDupIO :: IO String
+_test_sinkCafWithDupIO = \w0 ->
     let !(# w1, _count #) = retry (innerDupIO limit 'a' caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
   where
@@ -65,9 +65,9 @@ _test_cafWithDupIO = \w0 ->
 caf :: Sink (Maybe Char) Int
 caf = countChars 0
 
-{-# NOINLINE runConduit #-}
-runConduit :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
-runConduit limit ch =
+{-# NOINLINE runSinkConduit #-}
+runSinkConduit :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
+runSinkConduit limit ch =
     go limit
   where
     go :: Int -> Sink (Maybe Char) Int -> IO Int

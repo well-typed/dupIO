@@ -117,8 +117,14 @@ test-suite test-dupIO
 
   if flag(use-debug-RTS)
     ghc-options:
+      -threaded
+      -rtsopts
       -with-rtsopts "-T -DS"
       -debug
+    if impl(ghc >= 9.2.0)
+      ghc-options:
+        -fdistinct-constructor-tables
+        -finfo-table-map
 
 --------------------------------------------------------------------------------
 -- Demos
