@@ -107,6 +107,8 @@ test-suite test-dupIO
     , ghc-prim
     , tasty
     , tasty-hunit
+
+    , ghc-debug-stub
   default-extensions:
       UnboxedTuples
       MagicHash
@@ -117,8 +119,12 @@ test-suite test-dupIO
 
   if flag(use-debug-RTS)
     ghc-options:
+      -threaded
+      -rtsopts
       -with-rtsopts "-T -DS"
       -debug
+      -fdistinct-constructor-tables
+      -finfo-table-map
 
 --------------------------------------------------------------------------------
 -- Demos

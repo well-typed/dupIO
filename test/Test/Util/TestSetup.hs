@@ -26,6 +26,7 @@ module Test.Util.TestSetup (
 import Prelude hiding (IO, (<*))
 
 import Control.Exception (SomeException, Exception)
+import Control.Monad (void)
 import Data.Coerce
 import Data.Word
 import GHC.Prim (State#, RealWorld)
@@ -40,6 +41,7 @@ import qualified GHC.IO            as GHC.IO
 import qualified Test.Tasty.HUnit  as Tasty
 
 import Test.Util
+import Debug.Trace (traceMarkerIO)
 
 {-------------------------------------------------------------------------------
   Expose IO
@@ -149,11 +151,13 @@ mb = 1024 * 1024
 
 checkMem :: MemSize -> IO ()
 checkMem limit = unwrapIO $ do
+    traceMarkerIO "checking memory usage"
     statsEnabled <- getRTSStatsEnabled
     if not statsEnabled then
       E.throwIO RtsStatsNotEnabled
     else do
       performMajorGC
+      void getLine
       stats <- getRTSStats
       let live = MemSize $ gcdetails_live_bytes (gc stats)
       if live > limit

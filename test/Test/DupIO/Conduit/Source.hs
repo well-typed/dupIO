@@ -26,7 +26,7 @@ tests = testGroup "Test.DupIO.Conduit.Source" [
     , testLocalOOM "outerDupIO_partiallyEvaluated.OOM" test_outerDupIO_partiallyEvaluated
     , testCaseInfo "innerDupIO.OK"                     test_innerDupIO
     , testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testLocalOOM "cafWithoutDupIO.OOM"               test_cafWithoutDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -76,9 +76,9 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
-    let !(# w1, _sum #) = retry (outerDupIO caf <* checkMem (1 * mb)) w0
+test_cafWithoutDupIO :: IO String
+test_cafWithoutDupIO = \w0 ->
+    let !(# w1, _sum #) = (runConduit caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
 {-------------------------------------------------------------------------------
