@@ -13,10 +13,13 @@ import Data.Dup.Internal
 
 -- | Make shallow copy of a closure
 --
--- This attempts to make a copy of the provided closure; if the closure type
--- is unrecognized, the closure is returned as is. This is primarily useful
--- for copying thunks (see Motivation, below). The copy is shallow: any other
--- closures referenced by this one are /not/ copied.
+-- This is primarily useful for copying thunks (see Motivation, below). The copy
+-- is shallow: any other closures referenced by this one are /not/ copied.
+--
+-- If the closure type is unrecognized, or if we are unable to duplicate the
+-- closure, the closure is returned as-is. Notably, this will happen for CAFs
+-- (<https://github.com/well-typed/dupIO/issues/9#issuecomment-1563226234>),
+-- but see discussion below.
 --
 -- = Motivation
 --
@@ -87,6 +90,14 @@ import Data.Dup.Internal
 --
 -- By duplicating the closure before we pattern match on it, the original
 -- closure remains a thunk, and we never unfold the conduit in memory.
+--
+-- It is not necessary to duplicate /every/ constructor; for example, you could
+-- decide to duplicate every @n@th constructor for some @n@; higher values of
+-- @n@ will result in less overhead, with 'runSource' retaining at most @n@
+-- 'Source' constructors (because after that point the chain is broken). This
+-- also the reason that it's not that problematic that we cannot duplicate CAFs:
+-- as long as the chain is broken somewhere /after/ the CAF, the amount of
+-- memory we can leak will remain very limited.
 --
 -- __NOTE__: I\/O code often depends on ghc optimizations to run in constant
 -- space; code compiled with @-O0@ can leak for many reasons. Compile with
