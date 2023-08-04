@@ -2,7 +2,10 @@ module Test.DupIO.Conduit.Source (tests) where
 
 import Prelude hiding (IO, (<*))
 
+import Data.IORef
 import Test.Tasty
+
+import qualified System.IO.Unsafe as Unsafe
 
 import Test.Util.Conduit.Source
 import Test.Util.TestSetup
@@ -26,7 +29,8 @@ tests = testGroup "Test.DupIO.Conduit.Source" [
     , testLocalOOM "outerDupIO_partiallyEvaluated.OOM" test_outerDupIO_partiallyEvaluated
     , testCaseInfo "innerDupIO.OK"                     test_innerDupIO
     , testCaseInfo "innerDupIO_partiallyEvaluated.OK"  test_innerDupIO_partiallyEvaluated
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testLocalOOM "caf_outerDupIO.OOM"                test_caf_outerDupIO
+    , testCaseInfo "caf_innerDupIO.OK"                 test_caf_innerDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -76,9 +80,20 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
+-- This test will fail, because we cannot duplicate the CAF itself (#20).
+test_caf_outerDupIO :: IO String
+test_caf_outerDupIO = withSingleUseCAF caf1Ref $ \caf w0 ->
     let !(# w1, _sum #) = retry (outerDupIO caf <* checkMem (1 * mb)) w0
+    in (# w1, "succeeded with 1MB memory limit" #)
+
+-- However, even though we cannot duplicate the first link in the chain (i.e.,
+-- the CAF), that shouldn't matter if we duplicate /everything/; we'd retain
+-- a tiny bit, but nothing to cause trouble.
+--
+-- Using a different CAF here to avoid these two tests influencing each other.
+test_caf_innerDupIO :: IO String
+test_caf_innerDupIO = withSingleUseCAF caf2Ref $ \caf w0 ->
+    let !(# w1, _sum #) = retry (innerDupIO caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
 {-------------------------------------------------------------------------------
@@ -89,12 +104,27 @@ _test_cafWithDupIO = \w0 ->
   for some discussion.
 -------------------------------------------------------------------------------}
 
-{-# NOINLINE caf #-}
-caf :: Source Int ()
-caf = yieldFrom limit
+{-# NOINLINE caf1 #-}
+caf1 :: Source Int ()
+caf1 = yieldFrom limit
   where
     limit :: Int
     limit = 250_000
+
+{-# NOINLINE caf1Ref #-}
+caf1Ref :: IORef (Maybe (Source Int ()))
+caf1Ref = Unsafe.unsafePerformIO $ newIORef (Just caf1)
+
+{-# NOINLINE caf2 #-}
+caf2 :: Source Int ()
+caf2 = yieldFrom limit
+  where
+    limit :: Int
+    limit = 250_000
+
+{-# NOINLINE caf2Ref #-}
+caf2Ref :: IORef (Maybe (Source Int ()))
+caf2Ref = Unsafe.unsafePerformIO $ newIORef (Just caf2)
 
 {-# NOINLINE runConduit #-}
 runConduit :: Source Int () -> IO Int

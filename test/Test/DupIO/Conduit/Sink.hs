@@ -2,7 +2,10 @@ module Test.DupIO.Conduit.Sink (tests) where
 
 import Prelude hiding (IO, (<*))
 
+import Data.IORef
 import Test.Tasty
+
+import qualified System.IO.Unsafe as Unsafe
 
 import Test.Util.Conduit.Sink
 import Test.Util.TestSetup
@@ -16,7 +19,7 @@ tests = testGroup "Test.DupIO.Conduit.Sink" [
       testLocalOOM "withoutDupIO.OOM"                 test_withoutDupIO
     , testCaseInfo "innerDupIO.OK"                    test_innerDupIO
     , testCaseInfo "innerDupIO_partiallyEvaluated.OK" test_innerDupIO_partiallyEvaluated
---    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+    , testCaseInfo "caf_innerDupIO.OK"                test_caf_innerDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -47,8 +50,8 @@ test_innerDupIO_partiallyEvaluated = \w0 ->
     limit :: Int
     limit = 250_000
 
-_test_cafWithDupIO :: IO String
-_test_cafWithDupIO = \w0 ->
+test_caf_innerDupIO :: IO String
+test_caf_innerDupIO = withSingleUseCAF caf1Ref $ \caf w0 ->
     let !(# w1, _count #) = retry (innerDupIO limit 'a' caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
   where
@@ -61,9 +64,13 @@ _test_cafWithDupIO = \w0 ->
   See "Test.Conduit.Source.Bidirectional" for a discussion of @Box@.
 -------------------------------------------------------------------------------}
 
-{-# NOINLINE caf #-}
-caf :: Sink (Maybe Char) Int
-caf = countChars 0
+{-# NOINLINE caf1 #-}
+caf1 :: Sink (Maybe Char) Int
+caf1 = countChars 0
+
+{-# NOINLINE caf1Ref #-}
+caf1Ref :: IORef (Maybe (Sink (Maybe Char) Int))
+caf1Ref = Unsafe.unsafePerformIO $ newIORef (Just caf1)
 
 {-# NOINLINE runConduit #-}
 runConduit :: Int -> Char -> Sink (Maybe Char) Int -> IO Int
