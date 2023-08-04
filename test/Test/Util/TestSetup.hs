@@ -14,8 +14,9 @@ module Test.Util.TestSetup (
   , testCaseInfo
   , testLocalOOM
   , assertEqualInfo
-    -- * Top-level retrying exception handler
+    -- * Top-level handlers
   , retry
+  , withSingleUseCAF
     -- * Check memory usage
   , MemSize -- opaque
   , mb
@@ -27,6 +28,7 @@ import Prelude hiding (IO, (<*))
 
 import Control.Exception (SomeException, Exception)
 import Data.Coerce
+import Data.IORef
 import Data.Word
 import GHC.Prim (State#, RealWorld)
 import GHC.Stats
@@ -133,6 +135,22 @@ retry io = unwrapIO $ go 0
 
 replicateM_ :: Int -> IO () -> IO ()
 replicateM_ n io = unwrapIO $ Control.Monad.replicateM_ n (wrapIO io)
+
+-- | Ensure GC of CAF after test
+--
+-- Tests that involve CAFs are tricky, because the exact moment that a CAF is
+-- GCed depends on all kinds of things (and it's a bit conservative). Instead we
+-- access the CAF through a (global) IORef which is initialized to point to the
+-- CAF, and which is cleared the moment the test completes; this ensures that
+-- each test cannot affect the next.
+withSingleUseCAF :: forall a b. IORef (Maybe a) -> (a -> IO b) -> IO b
+withSingleUseCAF cafRef k = unwrapIO go
+  where
+    go :: GHC.IO.IO b
+    go = do
+        -- This function should only ever be called once for each CAF
+        Just caf <- readIORef cafRef
+        wrapIO (k caf) `E.finally` writeIORef cafRef Nothing
 
 {-------------------------------------------------------------------------------
   Check memory usage

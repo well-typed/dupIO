@@ -17,9 +17,9 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Closed" [
-      testLocalOOM "withoutDupIO.OOM" test_withoutDupIO
-    , testCaseInfo "innerDupIO.OK"    test_innerDupIO
-    , testCaseInfo "OK.cafWithDupIO"  test_cafWithDupIO
+      testLocalOOM "withoutDupIO.OOM"  test_withoutDupIO
+    , testCaseInfo "innerDupIO.OK"     test_innerDupIO
+    , testCaseInfo "caf_innerDupIO.OK" test_caf_innerDupIO
     ]
 
 test_withoutDupIO :: IO String
@@ -42,8 +42,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 100_000
 
-test_cafWithDupIO :: IO String
-test_cafWithDupIO = \w0 ->
+test_caf_innerDupIO :: IO String
+test_caf_innerDupIO = withSingleUseCAF caf1Ref $ \caf w0 ->
     let !(# w1, () #) = retry (innerDupIO caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
@@ -55,12 +55,16 @@ test_cafWithDupIO = \w0 ->
 globalIORef :: IORef Int
 globalIORef = Unsafe.unsafePerformIO $ newIORef 0
 
-{-# NOINLINE caf #-}
-caf :: Closed Prelude.IO ()
-caf = addFrom globalIORef limit
+{-# NOINLINE caf1 #-}
+caf1 :: Closed Prelude.IO ()
+caf1 = addFrom globalIORef limit
   where
     limit :: Int
     limit = 100_000
+
+{-# NOINLINE caf1Ref #-}
+caf1Ref :: IORef (Maybe (Closed Prelude.IO ()))
+caf1Ref = Unsafe.unsafePerformIO $ newIORef (Just caf1)
 
 {-# NOINLINE runConduit #-}
 runConduit :: Closed Prelude.IO () -> IO ()
