@@ -114,11 +114,18 @@ test-suite test-dupIO
       -with-rtsopts "-T"
       -fno-full-laziness
       -fno-state-hack
+      -threaded
+      -rtsopts
 
   if flag(use-debug-RTS)
     ghc-options:
       -with-rtsopts "-T -DS"
       -debug
+
+  if impl(ghc >= 9.2.0)
+    ghc-options:
+      -fdistinct-constructor-tables
+      -finfo-table-map
 
 --------------------------------------------------------------------------------
 -- Demos

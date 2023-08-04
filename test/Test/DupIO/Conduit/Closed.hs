@@ -17,13 +17,13 @@ import Test.Util.TestSetup
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Closed" [
-      testLocalOOM "withoutDupIO.OOM"  test_withoutDupIO
-    , testCaseInfo "innerDupIO.OK"     test_innerDupIO
-    , testCaseInfo "caf_innerDupIO.OK" test_caf_innerDupIO
+      testLocalOOM "closedWithoutDupIO.OOM"  test_closedWithoutDupIO
+    , testCaseInfo "closedInnerDupIO.OK"     test_closedInnerDupIO
+    , testCaseInfo "closedInnerDupIO_caf.OK" test_closedInnerDupIO_caf
     ]
 
-test_withoutDupIO :: IO String
-test_withoutDupIO = \w0 ->
+test_closedWithoutDupIO :: IO String
+test_closedWithoutDupIO = \w0 ->
     let !(# w1, ref #) = unwrapIO (newIORef 0) w0
         c = addFrom ref limit
         !(# w2, () #) = retry (runConduit c <* checkMem (1 * mb)) w1
@@ -32,8 +32,8 @@ test_withoutDupIO = \w0 ->
     limit :: Int
     limit = 100_000
 
-test_innerDupIO :: IO String
-test_innerDupIO = \w0 ->
+test_closedInnerDupIO :: IO String
+test_closedInnerDupIO = \w0 ->
     let !(# w1, ref #) = unwrapIO (newIORef 0) w0
         c = addFrom ref limit
         !(# w2, () #) = retry (innerDupIO c <* checkMem (1 * mb)) w1
@@ -42,8 +42,8 @@ test_innerDupIO = \w0 ->
     limit :: Int
     limit = 100_000
 
-test_caf_innerDupIO :: IO String
-test_caf_innerDupIO = withSingleUseCAF caf1Ref $ \caf w0 ->
+test_closedInnerDupIO_caf :: IO String
+test_closedInnerDupIO_caf = withSingleUseCAF caf1Ref $ \caf w0 ->
     let !(# w1, () #) = retry (innerDupIO caf <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
 
