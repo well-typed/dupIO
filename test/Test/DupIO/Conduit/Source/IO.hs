@@ -18,14 +18,14 @@ import Test.Util.Conduit.Source.IO
 
 tests :: TestTree
 tests = testGroup "Test.DupIO.Conduit.Source.IO" [
-      testCaseInfo "withoutDUPIO_variant1.OK"  test_withoutDupIO_variant1
-    , testLocalOOM "withoutDUPIO_variant2.OOM" test_withoutDupIO_variant2
-    , testCaseInfo "withoutDUPIO_variant3.OK"  test_withoutDupIO_variant3
-    , testCaseInfo "innerDupIO.variant2_OK"    test_innerDupIO_variant2
+      testCaseInfo "sourceWithoutDUPIO_variant1.OK"  test_sourceWithoutDupIO_variant1
+    , testLocalOOM "sourceWithoutDUPIO_variant2.OOM" test_sourceWithoutDupIO_variant2
+    , testCaseInfo "sourceWithoutDUPIO_variant3.OK"  test_sourceWithoutDupIO_variant3
+    , testCaseInfo "sourceInnerDupIO_variant2.OK"    test_sourceInnerDupIO_variant2
     ]
 
-test_withoutDupIO_variant1 :: IO String
-test_withoutDupIO_variant1 = \w0 ->
+test_sourceWithoutDupIO_variant1 :: IO String
+test_sourceWithoutDupIO_variant1 = \w0 ->
     let c = yieldFrom1 limit
         !(# w1, _sum #) = retry (runConduit c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -33,8 +33,8 @@ test_withoutDupIO_variant1 = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_withoutDupIO_variant2 :: IO String
-test_withoutDupIO_variant2 = \w0 ->
+test_sourceWithoutDupIO_variant2 :: IO String
+test_sourceWithoutDupIO_variant2 = \w0 ->
     let c = yieldFrom2 limit
         !(# w1, _sum #) = retry (runConduit c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -42,8 +42,8 @@ test_withoutDupIO_variant2 = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_withoutDupIO_variant3 :: IO String
-test_withoutDupIO_variant3 = \w0 ->
+test_sourceWithoutDupIO_variant3 :: IO String
+test_sourceWithoutDupIO_variant3 = \w0 ->
     let c = yieldFrom3 limit
         !(# w1, _sum #) = retry (runConduit c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
@@ -51,8 +51,8 @@ test_withoutDupIO_variant3 = \w0 ->
     limit :: Int
     limit = 250_000
 
-test_innerDupIO_variant2 :: IO String
-test_innerDupIO_variant2 = \w0 ->
+test_sourceInnerDupIO_variant2 :: IO String
+test_sourceInnerDupIO_variant2 = \w0 ->
     let c = yieldFrom2 limit
         !(# w1, _sum #) = retry (innerDupIO c <* checkMem (1 * mb)) w0
     in (# w1, "succeeded with 1MB memory limit" #)
