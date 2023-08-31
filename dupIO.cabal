@@ -169,3 +169,9 @@ executable demo-leak-in-io
   import:         demo
   hs-source-dirs: demo
   main-is:        LeakInIO.hs
+
+executable demo-gc
+  import:         demo
+  hs-source-dirs: demo
+  main-is:        GC.hs
+  ghc-options:    -rtsopts
